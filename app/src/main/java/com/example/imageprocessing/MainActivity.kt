@@ -20,6 +20,7 @@ import com.example.imageprocessing.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
     lateinit var binding: ActivityMainBinding
+    private var drawEnabeled = false
     private var hipx: Float = 0f
     private var hipy: Float = 0f
     private var kneex: Float = 0f
@@ -37,46 +38,64 @@ class MainActivity : AppCompatActivity() {
         binding.openGalleryBtn.setOnClickListener {
             pickMediaLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
-        binding.image.setOnTouchListener { v, event ->
-            when (event?.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    // Get the current drawable (bitmap) from the ImageView
-                    val drawable = binding.image.drawable
-                    if (drawable is BitmapDrawable) {
-                        val bmp = drawable.bitmap
-                        val scales = calcScale()
+        binding.enableDrawBtn.setOnClickListener {
+            drawEnabeled = !drawEnabeled
+        }
+        if (drawEnabeled) {
+            binding.image.setOnTouchListener { v, event ->
+                when (event?.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        // Get the current drawable (bitmap) from the ImageView
+                        val drawable = binding.image.drawable
+                        if (drawable is BitmapDrawable) {
+                            val bmp = drawable.bitmap
+                            val scales = calcScale()
 
-                        // Update the landmark position based on touch
-                        val touchX = event.x
-                        val touchY = event.y
-                        // Update landmark positions based on touch events
-                        // Adjust these lines to fit your logic
-                        hipx = touchX
-                        hipy = touchY
-                        kneex = touchX
-                        kneey = touchY
-                        ankx = touchX
-                        anky = touchY
+                            // Update the landmark position based on touch
+                            val touchX = event.x
+                            val touchY = event.y
+                            // Update landmark positions based on touch events
+                            // Adjust these lines to fit your logic
+                            hipx = touchX
+                            hipy = touchY
+                            kneex = touchX
+                            kneey = touchY
+                            ankx = touchX
+                            anky = touchY
 
-                        // Clear the canvas and redraw the points and lines
-                        val mutableBitmap = bmp.copy(Bitmap.Config.ARGB_8888, true)
-                        val canvas = Canvas(mutableBitmap)
-                        val paint = Paint().apply {
-                            style = Paint.Style.FILL
-                            color = Color.RED // Adjust color as needed
+                            // Clear the canvas and redraw the points and lines
+                            val mutableBitmap = bmp.copy(Bitmap.Config.ARGB_8888, true)
+                            val canvas = Canvas(mutableBitmap)
+                            val paint = Paint().apply {
+                                style = Paint.Style.FILL
+                                color = Color.RED // Adjust color as needed
+                            }
+                            drawPoint(canvas, hipx, hipy, scales[0], scales[1], paint)
+                            drawPoint(canvas, kneex, kneey, scales[0], scales[1], paint)
+                            drawPoint(canvas, ankx, anky, scales[0], scales[1], paint)
+                            canvas.drawLine(
+                                hipx * scales[0],
+                                hipy * scales[1],
+                                kneex * scales[0],
+                                kneey * scales[1],
+                                paint
+                            )
+                            canvas.drawLine(
+                                kneex * scales[0],
+                                kneey * scales[1],
+                                ankx * scales[0],
+                                anky * scales[1],
+                                paint
+                            )
+
+                            // Set the modified bitmap back to the ImageView
+                            binding.image.setImageBitmap(mutableBitmap)
+
                         }
-                        drawPoint(canvas, hipx, hipy, scales[0], scales[1], paint)
-                        drawPoint(canvas, kneex, kneey, scales[0], scales[1], paint)
-                        drawPoint(canvas, ankx, anky, scales[0], scales[1], paint)
-                        canvas.drawLine(hipx * scales[0], hipy * scales[1], kneex * scales[0], kneey * scales[1], paint)
-                        canvas.drawLine(kneex * scales[0], kneey * scales[1], ankx * scales[0], anky * scales[1], paint)
-
-                        // Set the modified bitmap back to the ImageView
-                        binding.image.setImageBitmap(mutableBitmap)
                     }
                 }
+                true
             }
-            true
         }
     }
     private fun calcScale(): FloatArray {

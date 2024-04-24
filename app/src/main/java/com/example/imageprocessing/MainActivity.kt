@@ -18,7 +18,7 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.databinding.DataBindingUtil
 import com.example.imageprocessing.databinding.ActivityMainBinding
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity() , ZoomingImage.OnDrawListener{
     lateinit var binding: ActivityMainBinding
     private var drawEnabeled = false
     private var hipx: Float = 0f
@@ -39,8 +39,9 @@ class MainActivity : AppCompatActivity() {
             pickMediaLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
         binding.enableDrawBtn.setOnClickListener {
-            drawEnabeled = !drawEnabeled
+           binding.image.drawEnabled = !binding.image.drawEnabled
         }
+        binding.image.drawListener = this
         if (drawEnabeled) {
             binding.image.setOnTouchListener { v, event ->
                 when (event?.action) {
@@ -116,5 +117,9 @@ class MainActivity : AppCompatActivity() {
         val scaledX = x * scaleX
         val scaledY = y * scaleY
         canvas.drawCircle(scaledX, scaledY, 10f, paint) // Adjust radius as needed
+    }
+
+    override fun onDrawRequested(bitmap: Bitmap) {
+        binding.image.setImageBitmap(bitmap)
     }
 }

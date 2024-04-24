@@ -39,12 +39,6 @@ GestureDetector.OnGestureListener, GestureDetector.OnDoubleTapListener {
     private var mLast = PointF()
     private var mStart = PointF()
     var drawListener: OnDrawListener? = null
-    private var hipx: Float = 0f
-    private var hipy: Float = 0f
-    private var kneex: Float = 0f
-    private var kneey: Float = 0f
-    private var ankx: Float = 0f
-    private var anky: Float = 0f
     constructor(context: Context) : super(context) {
         sharedConstructing(context)
     }
@@ -123,9 +117,9 @@ GestureDetector.OnGestureListener, GestureDetector.OnDoubleTapListener {
     }
 
     fun fixTranslation() {
-        mMatrix!!.getValues(mMatrixValues) //put matrix values into a float array so we can analyze
-        val transX = mMatrixValues!![Matrix.MTRANS_X] //get the most recent translation in x direction
-        val transY = mMatrixValues!![Matrix.MTRANS_Y] //get the most recent translation in y direction
+        mMatrix!!.getValues(mMatrixValues)
+        val transX = mMatrixValues!![Matrix.MTRANS_X]
+        val transY = mMatrixValues!![Matrix.MTRANS_Y]
         val fixTransX = getFixTranslation(transX, viewWidth.toFloat(), origWidth * mSaveScale)
         val fixTransY = getFixTranslation(transY, viewHeight.toFloat(), origHeight * mSaveScale)
         if (fixTransX != 0f || fixTransY != 0f) mMatrix!!.postTranslate(fixTransX, fixTransY)
@@ -134,17 +128,17 @@ GestureDetector.OnGestureListener, GestureDetector.OnDoubleTapListener {
     private fun getFixTranslation(trans: Float, viewSize: Float, contentSize: Float): Float {
         val minTrans: Float
         val maxTrans: Float
-        if (contentSize <= viewSize) { // case: NOT ZOOMED
+        if (contentSize <= viewSize) {
             minTrans = 0f
             maxTrans = viewSize - contentSize
-        } else { //CASE: ZOOMED
+        } else {
             minTrans = viewSize - contentSize
             maxTrans = 0f
         }
-        if (trans < minTrans) { // negative x or y translation (down or to the right)
+        if (trans < minTrans) {
             return -trans + minTrans
         }
-        if (trans > maxTrans) { // positive x or y translation (up or to the left)
+        if (trans > maxTrans) {
             return -trans + maxTrans
         }
         return 0F
@@ -161,8 +155,6 @@ GestureDetector.OnGestureListener, GestureDetector.OnDoubleTapListener {
         viewWidth = MeasureSpec.getSize(widthMeasureSpec)
         viewHeight = MeasureSpec.getSize(heightMeasureSpec)
         if (mSaveScale == 1f) {
-
-            // Fit to screen.
             fitToScreen()
         }
     }
@@ -181,51 +173,18 @@ GestureDetector.OnGestureListener, GestureDetector.OnDoubleTapListener {
                 mode = DRAG
                 val adjustedPoint = adjustTouchCoordinates(event)
                 if (drawEnabled){
-                    // Get the current drawable (bitmap) from the ImageView
                     val drawable = drawable
                     if (drawable is BitmapDrawable) {
                         val bmp = drawable.bitmap
-                        val scales = calcScale()
-
-                        // Update the landmark position based on touch
                         val touchX = adjustedPoint.x
                         val touchY = adjustedPoint.y
-                        // Update landmark positions based on touch events
-                        // Adjust these lines to fit your logic
-                        hipx = touchX
-                        hipy = touchY
-                        kneex = touchX
-                        kneey = touchY
-                        ankx = touchX
-                        anky = touchY
-
-                        // Clear the canvas and redraw the points and lines
                         val mutableBitmap = bmp.copy(Bitmap.Config.ARGB_8888, true)
                         val canvas = Canvas(mutableBitmap)
                         val paint = Paint().apply {
                             style = Paint.Style.FILL
-                            color = Color.RED // Adjust color as needed
+                            color = Color.RED
                         }
-                        drawPoint(canvas, hipx, hipy, scales[0], scales[1], paint)
-                        drawPoint(canvas, kneex, kneey, scales[0], scales[1], paint)
-                        drawPoint(canvas, ankx, anky, scales[0], scales[1], paint)
-                        canvas.drawLine(
-                            hipx * scales[0],
-                            hipy * scales[1],
-                            kneex * scales[0],
-                            kneey * scales[1],
-                            paint
-                        )
-                        canvas.drawLine(
-                            kneex * scales[0],
-                            kneey * scales[1],
-                            ankx * scales[0],
-                            anky * scales[1],
-                            paint
-                        )
-
-                        // Set the modified bitmap back to the ImageView
-                        //binding.image.setImageBitmap(mutableBitmap)
+                        drawPoint(canvas, touchX, touchY,paint)
                         drawListener?.onDrawRequested(mutableBitmap)
 
                     }
@@ -246,41 +205,18 @@ GestureDetector.OnGestureListener, GestureDetector.OnDoubleTapListener {
         return false
     }
     private fun adjustTouchCoordinates(event: MotionEvent): PointF {
-        // Create a PointF object to hold the original touch coordinates
         val originalPoint = PointF(event.x, event.y)
-
-        // Apply the inverse of the image matrix to the original touch coordinates to consider scaling and translation
         val inverseMatrix = Matrix()
         mMatrix!!.invert(inverseMatrix)
         val adjustedPoint = FloatArray(2)
         adjustedPoint[0] = originalPoint.x
         adjustedPoint[1] = originalPoint.y
         inverseMatrix.mapPoints(adjustedPoint)
-
-        // Return the adjusted touch coordinates as a PointF object
         return PointF(adjustedPoint[0], adjustedPoint[1])
-
     }
-    private fun drawPoint(canvas: Canvas, x: Float, y: Float, scaleX: Float, scaleY: Float, paint: Paint) {
-        // Transform coordinates based on scale factors
-        val scaledX = x
-        val scaledY = y
-        canvas.drawCircle(scaledX, scaledY, 10f, paint) // Adjust radius as needed
+    private fun drawPoint(canvas: Canvas, x: Float, y: Float, paint: Paint) {
+        canvas.drawCircle(x, y, 10f, paint)
     }
-    private fun calcScale(): FloatArray {
-        // Get the dimensions of the bitmap and ImageView
-        val bitmapWidth = drawable.intrinsicWidth
-        val bitmapHeight = drawable.intrinsicHeight
-        val imageViewWidth = measuredWidth
-        val imageViewHeight = measuredHeight
-
-        // Calculate scale factors
-        val scaleX = bitmapWidth.toFloat() / imageViewWidth
-        val scaleY = bitmapHeight.toFloat() / imageViewHeight
-
-        return floatArrayOf(scaleX, scaleY)
-    }
-
     /*
         GestureListener
      */

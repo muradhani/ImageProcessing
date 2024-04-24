@@ -179,6 +179,7 @@ GestureDetector.OnGestureListener, GestureDetector.OnDoubleTapListener {
                 mLast.set(currentPoint)
                 mStart.set(mLast)
                 mode = DRAG
+                val adjustedPoint = adjustTouchCoordinates(event)
                 if (drawEnabled){
                     // Get the current drawable (bitmap) from the ImageView
                     val drawable = drawable
@@ -187,8 +188,8 @@ GestureDetector.OnGestureListener, GestureDetector.OnDoubleTapListener {
                         val scales = calcScale()
 
                         // Update the landmark position based on touch
-                        val touchX = event.x
-                        val touchY = event.y
+                        val touchX = adjustedPoint.x
+                        val touchY = adjustedPoint.y
                         // Update landmark positions based on touch events
                         // Adjust these lines to fit your logic
                         hipx = touchX
@@ -244,10 +245,26 @@ GestureDetector.OnGestureListener, GestureDetector.OnDoubleTapListener {
         imageMatrix = mMatrix
         return false
     }
+    private fun adjustTouchCoordinates(event: MotionEvent): PointF {
+        // Create a PointF object to hold the original touch coordinates
+        val originalPoint = PointF(event.x, event.y)
+
+        // Apply the inverse of the image matrix to the original touch coordinates to consider scaling and translation
+        val inverseMatrix = Matrix()
+        mMatrix!!.invert(inverseMatrix)
+        val adjustedPoint = FloatArray(2)
+        adjustedPoint[0] = originalPoint.x
+        adjustedPoint[1] = originalPoint.y
+        inverseMatrix.mapPoints(adjustedPoint)
+
+        // Return the adjusted touch coordinates as a PointF object
+        return PointF(adjustedPoint[0], adjustedPoint[1])
+
+    }
     private fun drawPoint(canvas: Canvas, x: Float, y: Float, scaleX: Float, scaleY: Float, paint: Paint) {
         // Transform coordinates based on scale factors
-        val scaledX = x * scaleX
-        val scaledY = y * scaleY
+        val scaledX = x
+        val scaledY = y
         canvas.drawCircle(scaledX, scaledY, 10f, paint) // Adjust radius as needed
     }
     private fun calcScale(): FloatArray {
